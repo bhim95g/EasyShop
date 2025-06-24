@@ -21,8 +21,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 @Configuration
-public class TestDatabaseConfig
-{
+public class TestDatabaseConfig {
     private final String serverUrl;
     private final String testDb;
     private final String username;
