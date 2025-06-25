@@ -16,17 +16,20 @@ import java.util.List;
 @CrossOrigin
 public class ProductsController
 {
-    private ProductDao productDao;
+    private final ProductDao productDao;
 
     @Autowired
     public ProductsController(ProductDao productDao)
     {
+
         this.productDao = productDao;
     }
 
+    //Get products
+
     @GetMapping("")
     @PreAuthorize("permitAll()")
-    public List<Product> search(@RequestParam(name="cat", required = false) Integer categoryId,
+    public List<Product> search(@RequestParam(name="categoryId", required = false) Integer categoryId,
                                 @RequestParam(name="minPrice", required = false) BigDecimal minPrice,
                                 @RequestParam(name="maxPrice", required = false) BigDecimal maxPrice,
                                 @RequestParam(name="color", required = false) String color
@@ -41,7 +44,7 @@ public class ProductsController
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
     }
-
+    //Get products {id}
     @GetMapping("{id}")
     @PreAuthorize("permitAll()")
     public Product getById(@PathVariable int id )
@@ -56,6 +59,20 @@ public class ProductsController
             return product;
         }
         catch(Exception ex)
+        {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
+        }
+    }
+
+    //Get products by category ID
+    @GetMapping ("/category/{categoryId}")
+    @PreAuthorize("permitAll()")
+    public List<Product> getByCategory(@PathVariable int categoryId) {
+        try
+        {
+            return productDao.listByCategoryId(categoryId);
+        }
+        catch (Exception ex)
         {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
