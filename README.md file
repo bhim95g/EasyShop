@@ -1,0 +1,34 @@
+# 🛍️ EasyShop – E-Commerce Spring Boot API
+
+EasyShop is a Java-based Spring Boot RESTful API that simulates the backend of an e-commerce platform. It supports products, categories, shopping carts, and user authentication with JWT.
+
+---
+
+## 🚀 Features
+
+- Full CRUD for Products and Categories
+- Secure login with JWT token
+- Shopping cart API endpoints
+- Role-based access control (admin/user)
+- Connected to MySQL database
+
+---
+
+## 📸 Screenshots
+
+> screenshots
+categories test.png
+
+---
+
+## 🧠 Interesting Code Snippet
+
+This code checks for a category’s existence before updating it:
+
+```java
+@PutMapping("{id}")
+@PreAuthorize("hasRole('ROLE_ADMIN')")
+public void updateCategory(@PathVariable int id, @RequestBody Category category)
+{
+    categoryDao.update(id, category);
+}
