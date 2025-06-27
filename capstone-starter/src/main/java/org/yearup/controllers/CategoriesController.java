@@ -64,7 +64,7 @@ public CategoriesController (CategoryDao categoryDao, ProductDao productDao) {th
 
     // add annotation to call this method for a POST action
     @PostMapping
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')") // Only User with role admin are allow to access this method
     @ResponseStatus(HttpStatus.CREATED)
     // add annotation to ensure that only an ADMIN can call this function
     public Category addCategory(@RequestBody Category category)

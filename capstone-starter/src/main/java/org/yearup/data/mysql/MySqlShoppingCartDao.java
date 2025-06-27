@@ -90,7 +90,7 @@ public class MySqlShoppingCartDao extends MySqlDaoBase implements ShoppingCartDa
         }
         catch (SQLException exception)
         {
-            throw new RuntimeException(exception);
+            exception.printStackTrace();
         }
     }
     @Override
@@ -107,7 +107,7 @@ public class MySqlShoppingCartDao extends MySqlDaoBase implements ShoppingCartDa
         }
         catch (SQLException exception)
         {
-            throw new RuntimeException(exception);
+            exception.printStackTrace();
         }
     }
     @Override
@@ -123,7 +123,7 @@ public class MySqlShoppingCartDao extends MySqlDaoBase implements ShoppingCartDa
         }
         catch (SQLException exception)
         {
-            throw new RuntimeException(exception);
+            exception.printStackTrace();
         }
     }
 }
