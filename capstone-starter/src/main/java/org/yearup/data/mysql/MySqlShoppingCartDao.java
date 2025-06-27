@@ -1,5 +1,6 @@
 package org.yearup.data.mysql;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.yearup.data.ProductDao;
 import org.yearup.data.ShoppingCartDao;
@@ -15,6 +16,8 @@ import java.util.*;
 
 public class MySqlShoppingCartDao extends MySqlDaoBase implements ShoppingCartDao {
     private final ProductDao productDao;
+
+    @Autowired
 
     public MySqlShoppingCartDao(DataSource dataSource, ProductDao productDao)
     {
@@ -87,7 +90,7 @@ public class MySqlShoppingCartDao extends MySqlDaoBase implements ShoppingCartDa
         }
         catch (SQLException exception)
         {
-            exception.printStackTrace();
+            throw new RuntimeException(exception);
         }
     }
     @Override
@@ -104,7 +107,7 @@ public class MySqlShoppingCartDao extends MySqlDaoBase implements ShoppingCartDa
         }
         catch (SQLException exception)
         {
-            exception.printStackTrace();
+            throw new RuntimeException(exception);
         }
     }
     @Override
@@ -120,7 +123,7 @@ public class MySqlShoppingCartDao extends MySqlDaoBase implements ShoppingCartDa
         }
         catch (SQLException exception)
         {
-            exception.printStackTrace();
+            throw new RuntimeException(exception);
         }
     }
 }
