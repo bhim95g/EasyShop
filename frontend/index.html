@@ -52,7 +52,7 @@
 <body>
   <header class="top"><div class="top-inner">
     <div class="brand">easy<span>shop.</span></div>
-    <div class="top-actions"><button id="profileBtn">👤 My profile</button><button id="cartBtn">🛒 Cart <span class="count" id="cartCount">0</span></button></div>
+    <div class="top-actions"><button id="profileBtn">👤 My profile</button><button id="ordersBtn">📦 Orders</button><button id="cartBtn">🛒 Cart <span class="count" id="cartCount">0</span></button></div>
   </div></header>
   <main class="wrap">
     <div class="toolbar">
@@ -97,7 +97,7 @@
   const initialProfile={firstName:"Alex",lastName:"Morgan",phone:"412-555-0100",email:"alex@example.com",address:"123 Market Street",city:"Pittsburgh",state:"PA",zip:"15222"};
   const fields=["firstName","lastName","phone","email","address","city","state","zip"];
   const fieldLabels=["First name","Last name","Phone","Email","Street address","City","State","ZIP code"];
-  const state={mode:"demo",products:demoProducts,categories:demoCategories,cart:{},profile:{...initialProfile},token:null,user:null,panel:null,search:"",category:""};
+  const state={mode:"demo",products:demoProducts,categories:demoCategories,cart:{},profile:{...initialProfile},demoOrders:[],demoOrderCounter:1000,token:null,user:null,panel:null,search:"",category:""};
   const $=id=>document.getElementById(id);
   const money=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(n)||0);
   const escapeHtml=s=>String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -201,7 +201,7 @@
         '<strong>'+money((Number(i.product?.price)||0)*Number(i.quantity||0))+'</strong></div>'
       ).join("")+'<div class="total"><span>Estimated total</span><span>'+money(total)+'</span></div><button class="ghost" id="clearBtn">Clear cart</button>':
       '<div class="note">Your cart is empty. Browse products and choose “Add”.</div>';
-      showPanel("Your cart",body+'<div class="note">This API does not implement checkout or payments.</div>');
+      showPanel("Your cart",body+(cartItems.length?'<button class="primary" id="checkoutBtn" style="margin-top:15px">Proceed to checkout</button>':'')+'<div class="note">Checkout supports simulated payments and Stripe test mode. No real charges.</div>');
     }catch(e){toast(e.message);}
   }
   function showLogin(){
@@ -227,10 +227,106 @@
       fields.forEach(key=>$("f_"+key).removeAttribute("required"));
     }catch(e){toast(e.message);if(state.mode==="api"&&e.message.includes("404"))toast("Profile endpoint requires PR #3 to be merged/running.");}
   }
+
+  let pendingTestOrder=null;
+  const orderSummary=order=>'<div class="note">Order #'+escapeHtml(order.orderId)+' · '+escapeHtml(order.status)+'</div>'+
+    (order.items||[]).map(i=>'<div class="line"><div class="grow"><strong>'+escapeHtml(i.name||'Product')+'</strong><div class="muted">Qty '+Number(i.quantity)+' × '+money(i.unitPrice)+'</div></div><strong>'+money(Number(i.quantity)*Number(i.unitPrice))+'</strong></div>').join('')+
+    '<div class="total"><span>Total (USD)</span><span>'+money(order.total)+'</span></div>';
+  async function showCheckout(){
+    if(!requireSession())return;
+    try{
+      if(state.mode==="api")await refreshCart();
+      if(!items().length){toast("Your cart is empty.");return;}
+      let options='<option value="SIMULATED">Simulated test payment (no card)</option><option value="STRIPE_TEST">Stripe hosted test checkout</option>';
+      if(state.mode==="api"){
+        const config=await api("/checkout/config");
+        options=(config.simulatedPaymentsEnabled?'<option value="SIMULATED">Simulated test payment (no card)</option>':'')+
+                (config.stripeTestEnabled?'<option value="STRIPE_TEST">Stripe hosted test checkout</option>':'');
+        if(!options){toast("Enable sandbox checkout in your backend settings.");return;}
+      }
+      const total=items().reduce((sum,item)=>sum+Number(item.product?.price||0)*Number(item.quantity||0)*(1-Number(item.discountPercent||0)),0);
+      const body='<p class="muted">Shipping details and test payment. Prices are recalculated by the backend in Live mode.</p>'+
+        '<div class="total"><span>Cart estimate</span><span>'+money(total)+'</span></div>'+
+        '<form id="checkoutForm">'+
+        '<div class="field"><label for="shipAddress">Street address</label><input id="shipAddress" maxlength="100" required value="'+escapeHtml(state.profile?.address||'')+'"></div>'+
+        '<div class="form-grid"><div class="field"><label for="shipCity">City</label><input id="shipCity" maxlength="50" required value="'+escapeHtml(state.profile?.city||'')+'"></div>'+
+        '<div class="field"><label for="shipState">State</label><input id="shipState" maxlength="50" required value="'+escapeHtml(state.profile?.state||'')+'"></div>'+
+        '<div class="field"><label for="shipZip">ZIP code</label><input id="shipZip" maxlength="20" required value="'+escapeHtml(state.profile?.zip||'')+'"></div>'+
+        '<div class="field"><label for="paymentMethod">Payment test</label><select id="paymentMethod" style="width:100%;padding:10px;border:1px solid #dbe1eb;border-radius:9px">'+options+'</select></div></div>'+
+        '<button class="primary" type="submit">Place test order</button></form>'+
+        '<div class="note">Sandbox only. Never enter real card details into this form. Stripe test cards are entered only on Stripe’s hosted page.</div>';
+      showPanel("Checkout · test only",body);
+    }catch(e){toast(e.message);}
+  }
+  async function placeCheckout(){
+    const button=document.querySelector("#checkoutForm button[type=submit]");
+    if(button)button.disabled=true;
+    const request={address:$("shipAddress").value.trim(),city:$("shipCity").value.trim(),state:$("shipState").value.trim(),
+      zip:$("shipZip").value.trim(),paymentMethod:$("paymentMethod").value};
+    try{
+      let order;
+      if(state.mode==="demo"){
+        order={orderId:++state.demoOrderCounter,status:"PENDING_PAYMENT",paymentMethod:request.paymentMethod,
+          items:items().map(i=>({productId:i.product.productId,name:i.product.name,quantity:i.quantity,unitPrice:i.product.price})),
+          total:items().reduce((s,i)=>s+Number(i.product.price)*Number(i.quantity)*(1-Number(i.discountPercent||0)),0),
+          ...request,createdAt:new Date().toISOString()};
+        state.demoOrders.unshift(order);state.cart={};renderCount();
+      }else{
+        order=await api("/checkout/orders",{method:"POST",body:JSON.stringify(request)});
+        await refreshCart();
+      }
+      if(request.paymentMethod==="STRIPE_TEST" && state.mode==="api"){
+        if(!/^https:\/\/checkout\.stripe\.com\//.test(order.checkoutUrl||''))throw Error("Unexpected checkout URL.");
+        window.location.assign(order.checkoutUrl);return;
+      }
+      pendingTestOrder=order;
+      if(request.paymentMethod==="STRIPE_TEST" && state.mode==="demo"){
+        showPanel("Stripe test preview",orderSummary(order)+'<div class="note">Demo mode cannot connect to Stripe. Switch to Live API with Stripe test keys to use hosted payment pages.</div><button class="ghost" id="testDecline">Cancel test order</button>');
+      }else{
+        showPanel("Simulate a payment",orderSummary(order)+
+          '<p class="muted">Choose an outcome to test both successful and declined payments.</p>'+
+          '<div style="display:flex;gap:9px;flex-wrap:wrap"><button class="primary" id="testApprove">✓ Approve test payment</button><button class="ghost" id="testDecline">✕ Decline test payment</button></div>');
+      }
+    }catch(e){toast(e.message);if(button)button.disabled=false;}
+  }
+  async function finishSimulation(outcome){
+    if(!pendingTestOrder)return;
+    try{
+      let order;
+      if(state.mode==="demo"){
+        order=pendingTestOrder;order.status=outcome==="APPROVED"?"PAID":"DECLINED";
+      }else{
+        order=await api("/checkout/orders/"+pendingTestOrder.orderId+"/simulate",
+          {method:"POST",body:JSON.stringify({outcome})});
+      }
+      pendingTestOrder=null;
+      showPanel("Test payment "+(order.status==="PAID"?"approved":"declined"),
+        orderSummary(order)+'<button class="primary" id="viewOrdersBtn">View order history</button>');
+      toast("Order #"+order.orderId+" · "+order.status);
+    }catch(e){toast(e.message);}
+  }
+  async function showOrders(){
+    if(!requireSession())return;
+    try{
+      const orders=state.mode==="demo"?state.demoOrders:await api("/checkout/orders");
+      const rows=(Array.isArray(orders)?orders:[]);
+      showPanel("Order history",rows.length?rows.map(order=>
+        '<div style="padding:13px 0;border-bottom:1px solid #e3e8ef">'+
+          '<div style="display:flex;justify-content:space-between"><strong>Order #'+escapeHtml(order.orderId)+'</strong><strong>'+money(order.total)+'</strong></div>'+
+          '<div class="muted">'+escapeHtml(order.status)+' · '+escapeHtml(order.paymentMethod)+' · '+escapeHtml((order.createdAt||'').slice(0,10))+'</div>'+
+          '<div style="font-size:13px;margin-top:5px">'+(order.items||[]).map(i=>Number(i.quantity)+' × '+escapeHtml(i.name||'Product')).join(', ')+'</div></div>'
+        ).join(''):'<div class="note">No orders yet. Try placing a test order from your cart.</div>');
+    }catch(e){toast(e.message);}
+  }
+
   document.addEventListener("click",async event=>{
     const add=event.target.closest("[data-add]");if(add){await addItem(Number(add.dataset.add));return;}
     const qty=event.target.closest("[data-qty]");if(qty){await changeQuantity(Number(qty.dataset.id),Number(qty.dataset.qty));return;}
     if(event.target.id==="clearBtn"){await clearCart();return;}
+    if(event.target.id==="checkoutBtn"){await showCheckout();return;}
+    if(event.target.id==="testApprove"){await finishSimulation("APPROVED");return;}
+    if(event.target.id==="testDecline"){await finishSimulation("DECLINED");return;}
+    if(event.target.id==="viewOrdersBtn"){await showOrders();return;}
     if(event.target.id==="signOutBtn"){state.token=null;state.user=null;state.cart={};renderCount();closePanel();toast("Signed out");}
   });
   document.addEventListener("submit",async event=>{
@@ -243,6 +339,9 @@
         state.token=result.token;state.user=result.user||null;
         closePanel();await refreshCart();toast("Signed in successfully");
       }catch(e){toast(e.message);}
+    }
+    if(event.target.id==="checkoutForm"){
+      event.preventDefault();await placeCheckout();
     }
     if(event.target.id==="profileForm"){
       event.preventDefault();const payload={};
@@ -264,6 +363,7 @@
   $("reloadBtn").addEventListener("click",refresh);
   $("cartBtn").addEventListener("click",showCart);
   $("profileBtn").addEventListener("click",showProfile);
+  $("ordersBtn").addEventListener("click",showOrders);
   $("closeBtn").addEventListener("click",closePanel);
   $("overlay").addEventListener("click",e=>{if(e.target===$("overlay"))closePanel();});
   $("search").addEventListener("input",e=>{state.search=e.target.value;renderProducts();});
