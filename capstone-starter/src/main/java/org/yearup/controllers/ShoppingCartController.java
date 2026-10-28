@@ -89,8 +89,8 @@ public class ShoppingCartController
 
         try
         {
-            int updatedRows = shoppingCartDao.updateQuantity(getUserId(principal), productId, body.getQuantity());
-            if (updatedRows == 0)
+            boolean itemExists = shoppingCartDao.updateQuantity(getUserId(principal), productId, body.getQuantity());
+            if (!itemExists)
             {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart item not found.");
             }
