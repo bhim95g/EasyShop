@@ -15,7 +15,7 @@ public class RegisterUserDto {
     private String password;
     @NotEmpty
     private String confirmPassword;
-    @NotEmpty(message = "Please select a role for this user.")
+    // Legacy client field is accepted for compatibility but ignored by registration.
     private String role;
 
     public String getUsername() {

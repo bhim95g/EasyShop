@@ -72,6 +72,9 @@ public class AuthenticationController {
 
         try
         {
+            if (!newUser.getPassword().equals(newUser.getConfirmPassword()))
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match.");
+
             boolean exists = userDao.exists(newUser.getUsername());
             if (exists)
             {
@@ -79,7 +82,7 @@ public class AuthenticationController {
             }
 
             // create user
-            User user = userDao.create(new User(0, newUser.getUsername(), newUser.getPassword(), newUser.getRole()));
+            User user = userDao.create(new User(0, newUser.getUsername(), newUser.getPassword(), "ROLE_USER"));
 
             // create profile
             Profile profile = new Profile();
@@ -88,9 +91,13 @@ public class AuthenticationController {
 
             return new ResponseEntity<>(user, HttpStatus.CREATED);
         }
+        catch (ResponseStatusException e)
+        {
+            throw e;
+        }
         catch (Exception e)
         {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Registration failed.", e);
         }
     }
 
