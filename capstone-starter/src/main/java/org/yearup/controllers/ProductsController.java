@@ -39,7 +39,11 @@ public class ProductsController
         {
             return productDao.search(categoryId, minPrice, maxPrice, color);
         }
-        catch(Exception ex)
+        catch (ResponseStatusException ex)
+        {
+            throw ex;
+        }
+        catch (Exception ex)
         {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
@@ -58,7 +62,11 @@ public class ProductsController
 
             return product;
         }
-        catch(Exception ex)
+        catch (ResponseStatusException ex)
+        {
+            throw ex;
+        }
+        catch (Exception ex)
         {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
@@ -71,6 +79,10 @@ public class ProductsController
         try
         {
             return productDao.listByCategoryId(categoryId);
+        }
+        catch (ResponseStatusException ex)
+        {
+            throw ex;
         }
         catch (Exception ex)
         {
@@ -86,7 +98,11 @@ public class ProductsController
         {
             return productDao.create(product);
         }
-        catch(Exception ex)
+        catch (ResponseStatusException ex)
+        {
+            throw ex;
+        }
+        catch (Exception ex)
         {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
@@ -103,7 +119,11 @@ public class ProductsController
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
             productDao.update(id,product);
         }
-        catch(Exception ex)
+        catch (ResponseStatusException ex)
+        {
+            throw ex;
+        }
+        catch (Exception ex)
         {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
@@ -122,7 +142,11 @@ public class ProductsController
 
             productDao.delete(id);
         }
-        catch(Exception ex)
+        catch (ResponseStatusException ex)
+        {
+            throw ex;
+        }
+        catch (Exception ex)
         {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
         }
