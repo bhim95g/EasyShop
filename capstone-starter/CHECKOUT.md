@@ -18,10 +18,14 @@ The additive migration extends the **existing** `orders` and `order_line_items` 
 
 ## 2. Start simulated payments
 
-Configure a local MySQL connection and the existing JWT secret in your backend configuration. **Do not expose the backend publicly**: existing committed development credentials and seed accounts must be remediated.
+Set the **required** datasource password and JWT secret as environment variables. Generate a fresh Base64 signing key locally; do not commit it. **Do not expose the backend publicly**: older committed configuration values and seed accounts must still be remediated.
 
 ```bash
 cd capstone-starter
+export EASYSHOP_DB_URL='jdbc:mysql://localhost:3306/easyshop'
+export EASYSHOP_DB_USER='root'
+export EASYSHOP_DB_PASSWORD='YOUR_LOCAL_MYSQL_PASSWORD'
+export EASYSHOP_JWT_SECRET="$(openssl rand -base64 64)"
 export CHECKOUT_TEST_PAYMENTS_ENABLED=true
 ./mvnw spring-boot:run
 ```
@@ -50,6 +54,10 @@ stripe listen --forward-to localhost:8080/checkout/stripe/webhook
 The CLI prints a webhook signing secret (`whsec_...`). Configure both values in the backend environment before launching Java:
 
 ```bash
+export EASYSHOP_DB_URL='jdbc:mysql://localhost:3306/easyshop'
+export EASYSHOP_DB_USER='root'
+export EASYSHOP_DB_PASSWORD='YOUR_LOCAL_MYSQL_PASSWORD'
+export EASYSHOP_JWT_SECRET="$(openssl rand -base64 64)"
 export CHECKOUT_TEST_PAYMENTS_ENABLED=true
 export CHECKOUT_STRIPE_TEST_SECRET_KEY='sk_test_YOUR_TEST_KEY'
 export CHECKOUT_STRIPE_WEBHOOK_SECRET='whsec_YOUR_CLI_WEBHOOK_SECRET'
@@ -93,7 +101,7 @@ cd capstone-starter
 ./mvnw -Dtest=CheckoutControllerTest,StripeTestWebhookControllerTest test
 ```
 
-The checkout GitHub Actions workflow runs those isolated tests. **Full MySQL integration tests and real Stripe test-mode webhook E2E validation still require a local database and Stripe test account.**
+The checkout GitHub Actions workflow runs controller/webhook tests and H2 transactional order tests, plus a frontend JavaScript syntax check. **Full MySQL integration testing and real Stripe test-mode webhook E2E validation still require a local MySQL database and Stripe test account.**
 
 ## Production limitations — do not deploy as a real shop
 
