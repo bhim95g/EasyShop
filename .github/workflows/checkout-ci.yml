@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'capstone-starter/**'
+      - 'frontend/**'
       - '.github/workflows/checkout-ci.yml'
   push:
     branches:
@@ -24,4 +25,14 @@ jobs:
           cache-dependency-path: capstone-starter/pom.xml
       - name: Compile and run isolated checkout unit tests
         working-directory: capstone-starter
-        run: mvn -B -Dtest=CheckoutControllerTest,StripeTestWebhookControllerTest test
+        run: mvn -B -Dtest=CheckoutControllerTest,StripeTestWebhookControllerTest,CheckoutOrderDaoIntegrationTest test
+      - name: Check standalone frontend JavaScript syntax
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const source = fs.readFileSync('frontend/index.html','utf8');
+          const script = source.match(/<script>([\s\S]*?)<\/script>/);
+          if (!script) throw new Error('Inline frontend script missing');
+          new Function(script[1]);
+          console.log('Frontend syntax OK');
+          NODE
