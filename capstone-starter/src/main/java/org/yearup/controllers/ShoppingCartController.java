@@ -15,111 +15,125 @@ import org.yearup.models.User;
 
 import java.security.Principal;
 
-// convert this class to a REST controller
 @RestController
 @RequestMapping("/cart")
 @CrossOrigin
-@PreAuthorize("isAuthenticated()") //Require Login for all endpoint
-// only logged in users should have access to these actions
+@PreAuthorize("isAuthenticated()")
 public class ShoppingCartController
 {
-    // a shopping cart requires
     private final ShoppingCartDao shoppingCartDao;
     private final UserDao userDao;
     private final ProductDao productDao;
 
-
-
-    // each method in this controller requires a Principal object as a parameter
     @Autowired
-    public ShoppingCartController (ShoppingCartDao shoppingCartDao, UserDao userDao, ProductDao productDao) {
+    public ShoppingCartController(ShoppingCartDao shoppingCartDao, UserDao userDao, ProductDao productDao)
+    {
         this.shoppingCartDao = shoppingCartDao;
         this.userDao = userDao;
         this.productDao = productDao;
     }
-    //Get current user's cart
-    @GetMapping
-    public ShoppingCart getCart(Principal principal) {
 
+    @GetMapping
+    public ShoppingCart getCart(Principal principal)
+    {
         try
         {
-            // get the currently logged in username
-            String userName = principal.getName();
-            // find database user by userId
-            User user = userDao.getByUserName(userName);
-            int userId = user.getId();
-
-            // use the shoppingCartDao to get all items in the cart and return the cart
-            return shoppingCartDao.getByUserId(user.getId());
+            return shoppingCartDao.getByUserId(getUserId(principal));
         }
-        catch(Exception e)
+        catch (ResponseStatusException e)
         {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to load cart.");
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to load cart.", e);
         }
     }
 
-    // add a POST method to add a product to the cart - the url should be
-    // https://localhost:8080/cart/products/15 (15 is the productId to be added
     @PostMapping("/products/{productId}")
-    public void addToCart(@PathVariable int productId, Principal principal) {
-        try {
-            String userName = principal.getName();
-            User user = userDao.getByUserName(userName);
+    public void addToCart(@PathVariable int productId, Principal principal)
+    {
+        try
+        {
+            int userId = getUserId(principal);
             Product product = productDao.getById(productId);
-
             if (product == null)
+            {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found.");
+            }
 
             ShoppingCartItem item = new ShoppingCartItem();
             item.setProduct(product);
             item.setQuantity(1);
-
-            shoppingCartDao.addToCart(user.getId(), item);
+            shoppingCartDao.addToCart(userId, item);
+        }
+        catch (ResponseStatusException e)
+        {
+            throw e;
         }
         catch (Exception e)
         {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to add to cart.");
-
-
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to add to cart.", e);
         }
     }
 
-
-    // add a PUT method to update an existing product in the cart - the url should be
-    // https://localhost:8080/cart/products/15 (15 is the productId to be updated)
-    // the BODY should be a ShoppingCartItem - quantity is the only value that will be updated
     @PutMapping("/products/{productId}")
-    public void updateQuantity (@PathVariable int productId,
-                                @RequestBody ShoppingCartItem body,
-                                Principal principal) {
-        try {
-            String userName = principal.getName();
-            User user = userDao.getByUserName(userName);
-
-            shoppingCartDao.updateQuantity(user.getId(), productId, body.getQuantity());
+    public void updateQuantity(@PathVariable int productId,
+                               @RequestBody ShoppingCartItem body,
+                               Principal principal)
+    {
+        if (body == null || body.getQuantity() < 1)
+        {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity must be at least 1.");
         }
-        catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update cart item.");
 
-        }
-    }
-
-
-    // add a DELETE method to clear all products from the current users cart
-    // https://localhost:8080/cart
-    @DeleteMapping
-    public void clearCart(Principal principal) {
         try
         {
-            String userName = principal.getName();
-            User user = userDao.getByUserName(userName);
-
-            shoppingCartDao.clearCart(user.getId());
+            int updatedRows = shoppingCartDao.updateQuantity(getUserId(principal), productId, body.getQuantity());
+            if (updatedRows == 0)
+            {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart item not found.");
+            }
+        }
+        catch (ResponseStatusException e)
+        {
+            throw e;
         }
         catch (Exception e)
         {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to clear cart.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update cart item.", e);
         }
     }
 
+    @DeleteMapping
+    public void clearCart(Principal principal)
+    {
+        try
+        {
+            shoppingCartDao.clearCart(getUserId(principal));
+        }
+        catch (ResponseStatusException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to clear cart.", e);
+        }
+    }
+
+    private int getUserId(Principal principal)
+    {
+        if (principal == null)
+        {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required.");
+        }
+
+        User user = userDao.getByUserName(principal.getName());
+        if (user == null)
+        {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found.");
+        }
+        return user.getId();
+    }
 }
