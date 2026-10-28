@@ -37,3 +37,13 @@ The cart error handling and validation improvements are separately proposed in [
 - **Security:** The current registration implementation appears to trust a client-provided role, and the repository has committed datasource/JWT config values. Do not publish the backend to the open internet until those issues are remediated.
 
 This PR only introduces the static frontend and does not change `main` or deploy a site.
+
+## Checkout + test payments (new)
+
+The UI now has **Proceed to checkout** in the cart and **Orders** in the header. In **Demo** mode you can place an in-memory order and simulate an approval or decline without a backend. These demo orders reset on page reload.
+
+To save orders to MySQL and test real HTTP endpoints in **Live API** mode, use this branch for the backend as well, apply `capstone-starter/database/checkout_migration.sql` once, and follow the detailed instructions in [capstone-starter/CHECKOUT.md](../capstone-starter/CHECKOUT.md).
+
+Set `CHECKOUT_TEST_PAYMENTS_ENABLED=true` on your local backend to enable the simulated payment controls. For the optional **Stripe-hosted test Checkout**, set a Stripe `sk_test_` secret and run a signed webhook forwarder as explained in CHECKOUT.md. This does **not** support actual money or credit-card collection by EasyShop.
+
+On a Stripe redirect back to this frontend, open **Orders** after the backend receives its signed webhook. A browser success redirect alone is not confirmation of payment. Pending Stripe orders reserve inventory until a signed payment/expiry event is processed; production would need resilient reconciliation.
