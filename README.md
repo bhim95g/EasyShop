@@ -76,6 +76,24 @@ Checkout returns `400 Bad Request` if your cart is empty or your profile has no 
 
 ---
 
+## 🛍️ Storefront Website (work in progress)
+
+A single-page storefront lives in `frontend/index.html`. It talks to the API above.
+
+**Try it:**
+1. Start MySQL and run the Spring Boot app (see *Getting Started*).
+2. Open `frontend/index.html` in your browser.
+3. In the top strip, switch **Connection** to **Live API** (`http://localhost:8080`) and click **Refresh**.
+4. Sign in, add items to your bag, and choose **Place order**. Your orders appear under **Orders**.
+
+Use **Demo (no server)** to click around with sample data and no backend.
+
+**Features:** category menu, search, product photos with a lifestyle photo on hover, shopping bag, checkout, order history, profile editing.
+
+Product photos are free stock photos from [Pexels](https://www.pexels.com) and load from the internet; a product shows an icon if its photo can't load. The design is still being improved.
+
+---
+
 ## 🧠 Interesting Code Snippet
 
 Checkout saves the order, its line items and the emptied cart as one transaction: either everything is saved or nothing is.
