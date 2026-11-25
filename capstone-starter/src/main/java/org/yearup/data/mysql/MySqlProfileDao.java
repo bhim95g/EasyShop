@@ -44,4 +44,69 @@ public class MySqlProfileDao extends MySqlDaoBase implements ProfileDao
         }
     }
 
+    @Override
+    public Profile getByUserId(int userId)
+    {
+        String sql = "SELECT * FROM profiles WHERE user_id = ?";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql))
+        {
+            statement.setInt(1, userId);
+
+            try (ResultSet row = statement.executeQuery())
+            {
+                if (row.next())
+                {
+                    return mapRow(row);
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
+
+    @Override
+    public void update(int userId, Profile profile)
+    {
+        String sql = "UPDATE profiles SET first_name = ?, last_name = ?, phone = ?, email = ?, " +
+                "address = ?, city = ?, state = ?, zip = ? WHERE user_id = ?";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql))
+        {
+            statement.setString(1, profile.getFirstName());
+            statement.setString(2, profile.getLastName());
+            statement.setString(3, profile.getPhone());
+            statement.setString(4, profile.getEmail());
+            statement.setString(5, profile.getAddress());
+            statement.setString(6, profile.getCity());
+            statement.setString(7, profile.getState());
+            statement.setString(8, profile.getZip());
+            statement.setInt(9, userId);
+
+            statement.executeUpdate();
+        }
+        catch (SQLException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Profile mapRow(ResultSet row) throws SQLException
+    {
+        return new Profile(
+                row.getInt("user_id"),
+                row.getString("first_name"),
+                row.getString("last_name"),
+                row.getString("phone"),
+                row.getString("email"),
+                row.getString("address"),
+                row.getString("city"),
+                row.getString("state"),
+                row.getString("zip"));
+    }
 }
