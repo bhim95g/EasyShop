@@ -28,7 +28,7 @@ EasyShop is a Java Spring Boot REST API that powers the backend of an online sto
 
 ## ⚙️ Getting Started
 
-1. Create the database by running `capstone-starter/database/create_database.sql` in MySQL.
+1. Create the database by running `capstone-starter/database/create_database.sql` in MySQL, for example `mysql -u root -p < capstone-starter/database/create_database.sql`. It loads 200 products in 5 categories and 3 sample users. Running it again rebuilds the `easyshop` database from scratch, which deletes any accounts and orders you created.
 2. Set your MySQL connection details in `capstone-starter/src/main/resources/application.properties` (`datasource.url`, `datasource.username`, `datasource.password`).
 3. Start the API:
    ```bash
@@ -76,21 +76,30 @@ Checkout returns `400 Bad Request` if your cart is empty or your profile has no 
 
 ---
 
-## 🛍️ Storefront Website (work in progress)
+## 🛍️ Storefront Website
 
-A single-page storefront lives in `frontend/index.html`. It talks to the API above.
+A single-page storefront lives in `frontend/index.html`. It talks to the API above, or runs on built-in demo data with no server.
 
 **Try it:**
 1. Start MySQL and run the Spring Boot app (see *Getting Started*).
 2. Open `frontend/index.html` in your browser.
-3. In the top strip, switch **Connection** to **Live API** (`http://localhost:8080`) and click **Refresh**.
-4. Sign in, add items to your bag, and choose **Place order**. Your orders appear under **Orders**.
+3. Scroll to the footer, click **Developer settings**, and set **Connection** to **Live API** (`http://localhost:8080`). The tag next to it changes to **Live API** and the shop lists all 200 products from the database. The choice is remembered in your browser.
+4. Click **Join now** to create an account, add items to your bag, and choose **Place order**. Your orders appear under **My orders** (the box icon in the header).
 
-Use **Demo (no server)** to click around with sample data and no backend.
+With **Demo (no server)** you can click around with sample data and no backend. If the site can't reach the API, it switches to demo data and tells you.
 
-**Features:** category menu, search, product photos with a lifestyle photo on hover, shopping bag, checkout, order history, profile editing.
+**Features:**
+- 200 products in 5 categories, each with a product photo and a lifestyle photo
+- Search panel with popular and recent searches (press `/` to open it)
+- Big menu with product groups for each category, and a ☰ menu on phones
+- Filter sidebar: category, group, price, color, in stock only and new arrivals
+- NEW badges and a New arrivals row
+- Product pages with 4 photo views, a size guide and a sticky **Add to bag** bar on phones
+- Quick view, recently viewed, and sorting by price, name or newest
+- Shopping bag, checkout, order history and profile editing
+- Video hero, the Journal (3 stories), help pages, and a newsletter sign-up (saved in the browser only; no emails are sent)
 
-Product photos are free stock photos from [Pexels](https://www.pexels.com) and load from the internet; a product shows an icon if its photo can't load. The design is still being improved.
+Product photos and the hero video are free stock media from [Pexels](https://www.pexels.com) and load from the internet.
 
 ---
 
